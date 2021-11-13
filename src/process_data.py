@@ -62,6 +62,9 @@ def read_data_and_split(path, item_col, nrows, params_path):
     with open("../Data/artifacts/user2idx.json", "w") as f:
         json.dump(user2idx, f)
 
+    with open("../Data/artifacts/item2idx.json", "w") as f:
+        json.dump(item2idx, f)
+
     return ds_grouped
 
 

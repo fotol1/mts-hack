@@ -21,8 +21,8 @@ scipy==1.7.1
 seaborn==0.11.2
 six==1.16.0
 threadpoolctl==2.2.0
-torch==1.9.0
 tqdm==4.62.2
 typing-extensions==3.10.0.2
 catalyst==21.10
-
+uvicorn[standard]
+fastapi

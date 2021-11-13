@@ -22,6 +22,7 @@ def get_n_users_n_items(ds):
 def encode_data(ds):
 
     ds["userId"] = ds["userId"].astype(str)
+    ds["itemId"] = ds["itemId"].astype(str)
 
     user2idx = {v: k for k, v in enumerate(ds.userId.unique())}
     item2idx = {v: k for k, v in enumerate(ds.itemId.unique())}
