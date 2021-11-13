@@ -62,7 +62,9 @@ def plotImp(model, X, path, num=20, fig_size=(40, 20)):
     plt.figure(figsize=fig_size)
     sns.set(font_scale=5)
     sns.barplot(
-        x="Value", y="Feature", data=feature_imp,
+        x="Value",
+        y="Feature",
+        data=feature_imp,
     )
     plt.title("LightGBM Features (avg over folds)")
     plt.tight_layout()
@@ -76,8 +78,13 @@ def plotImp(model, X, path, num=20, fig_size=(40, 20)):
 def createParser():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transactions_path", type=str, default="../Data/processed_df.csv.gz")
-    parser.add_argument("--params_path", type=str, default="../Data/artifacts/params.json")
+    parser.add_argument(
+        "--transactions_path", type=str, default="../Data/processed_df.csv.gz"
+    )
+    parser.add_argument("--item_col", type=str)
+    parser.add_argument(
+        "--params_path", type=str, default="../Data/artifacts/params_{}.json"
+    )
 
     return parser
 
@@ -90,7 +97,7 @@ if __name__ == "__main__":
     logfile = os.path.join("logs", f"last_logs.log")
     # os.path.join("logs", f"{str(round(time.time()))}.log")
 
-    with open(args.params_path, "r") as f:
+    with open(args.params_path.format(args.item_col), "r") as f:
         params = json.load(f)
 
     logger.add(logfile)
@@ -115,7 +122,9 @@ if __name__ == "__main__":
     logger.info("The grouped data is loaded")
 
     runner = train_multivae(
-        path_to_save="../Data/artifacts/multvae", n_items=n_items, loaders=loaders
+        path_to_save=f"../Data/artifacts/multvae_{args.item_col}",
+        n_items=n_items,
+        loaders=loaders,
     )
 
     interaction_matrix, train_inters = get_interaction_matrix_from_grouped_data(
@@ -123,7 +132,8 @@ if __name__ == "__main__":
     )
 
     matrix = train_ease(
-        interaction_matrix=interaction_matrix, path_to_save="../Data/artifacts/ease",
+        interaction_matrix=interaction_matrix,
+        path_to_save=f"../Data/artifacts/ease_args{args.item_col}",
     )
 
     inference_loader = DataLoader(valid, batch_size=256, collate_fn=collate_fn_valid)
@@ -145,9 +155,12 @@ if __name__ == "__main__":
 
     for col in ["preds_multivae"]:
 
-        ds_grouped["scores"] = ds_grouped.apply(lambda x: get_scores(x, col=col), axis=1)
+        ds_grouped["scores"] = ds_grouped.apply(
+            lambda x: get_scores(x, col=col), axis=1
+        )
         ds_grouped["joined"] = ds_grouped.apply(
-            lambda x: [f"{y1}_{y2}" for y1, y2 in zip(x.all_candidates, x.scores)], axis=1,
+            lambda x: [f"{y1}_{y2}" for y1, y2 in zip(x.all_candidates, x.scores)],
+            axis=1,
         )
         user_item = ds_grouped[["userId", "joined"]].explode("joined")
         user_item["itemId"] = user_item.joined.apply(lambda x: int(x.split("_")[0]))
@@ -175,7 +188,7 @@ if __name__ == "__main__":
     for col in USER_FEATURES:
         user_info[col] = user_info[col].apply(lambda x: float(str(x).replace(",", ".")))
 
-    with open("../Data/artifacts/user2idx.json", "r") as f:
+    with open(f"../Data/artifacts/user2idx_{args.item_col}.json", "r") as f:
         user2idx = json.load(f)
 
     user_info.rename({"ID": "userId"}, axis=1, inplace=True)
@@ -194,7 +207,9 @@ if __name__ == "__main__":
         .reset_index()
     )
 
-    merch_info.rename({k: f"merch_mean_{k}" for k in USER_FEATURES}, axis=1, inplace=True)
+    merch_info.rename(
+        {k: f"merch_mean_{k}" for k in USER_FEATURES}, axis=1, inplace=True
+    )
     MERCH_FEATURES = [f"merch_mean_{k}" for k in USER_FEATURES]
     second_level_ds = second_level_ds.merge(merch_info)
     second_level_ds.head()
@@ -215,11 +230,16 @@ if __name__ == "__main__":
     auc_value = auc(test_df["label"], test_df["preds_boosting"])
     print(f"auc on test: {auc_value}")
 
-    plotImp(model=bst, X=FEATURES, path="../Data/artifacts/feature_importance.png")
-    bst.booster_.save_model("../Data/artifacts/boosting.txt")
+    plotImp(
+        model=bst,
+        X=FEATURES,
+        path=f"../Data/artifacts/feature_importance_{args.item_col}.png",
+    )
+    bst.booster_.save_model(f"../Data/artifacts/boosting_{args.item_col}.txt")
 
     logger.info(
         compute_metrics(
-            test_df.sort_values(by="userId")[:100000], models=["preds_multivae", "preds_boosting"],
+            test_df.sort_values(by="userId")[:100000],
+            models=["preds_multivae", "preds_boosting"],
         )
     )

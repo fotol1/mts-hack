@@ -71,7 +71,9 @@ def get_interaction_matrix_from_grouped_data(ds_grouped, n_items):
 
     train_inters = pd.DataFrame(train_inters, columns=["userId", "itemId"])
     train_inters["freq"] = 1
-    train_inters = train_inters.groupby(["userId", "itemId"]).agg({"freq": "sum"}).reset_index()
+    train_inters = (
+        train_inters.groupby(["userId", "itemId"]).agg({"freq": "sum"}).reset_index()
+    )
 
     matrix = sps.coo_matrix(
         (train_inters["freq"], (train_inters["userId"], train_inters["itemId"])),

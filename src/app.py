@@ -10,11 +10,25 @@ from models import multivae
 app = FastAPI()
 
 model = multivae.MultiVAE([200, 600, 50], dropout=0.0)
-model.load_state_dict(torch.load("../Data/artifacts/multvae"))
+model.load_state_dict(torch.load("../Data/artifacts/multvae_mcc"))
 model.eval()
 
-with open("../Data/artifacts/item2idx.json", "r") as f:
+with open("../Data/artifacts/params_merchant.json", "r") as f:
+    params = json.load(f)
+
+
+model_m = multivae.MultiVAE([200, 600, params["n_items"]], dropout=0.0)
+model_m.load_state_dict(torch.load("../Data/artifacts/multvae_merchant"))
+model_m.eval()
+
+
+with open("../Data/artifacts/item2idx_mcc.json", "r") as f:
     item2idx = json.load(f)
+
+with open("../Data/artifacts/item2idx_merchant.json", "r") as f:
+    item2idx_merchant = json.load(f)
+
+# item2idx_merchant = {str(x): v for x, v in item2idx_merchant.items()}
 
 decoder = {
     "5411": " Grocery Stores,supermarkets",
@@ -68,6 +82,7 @@ decoder = {
 
 
 idx2item = {v: k for k, v in item2idx.items()}
+idx2item_merchant = {v: k for k, v in item2idx_merchant.items()}
 
 
 # torch.load()
@@ -78,10 +93,10 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/recommendations/")
+@app.get("/category_recommendations/")
 def read_item(q: Optional[str] = None):
 
-    recs = get_recs(model, interactions=q)
+    recs = get_recs(model, interactions=q, item2idx=item2idx, idx2item=idx2item)
 
     answer = {"user_mcc": q}
     answer.update(recs)
@@ -90,13 +105,36 @@ def read_item(q: Optional[str] = None):
     return answer
 
 
-def get_recs(model, interactions, num_items=50, topk=10):
+@app.get("/merchant_recommendations/")
+def read_item(q: Optional[str] = None):
+
+    recs = get_recs(
+        model_m,
+        interactions=q,
+        item2idx=item2idx_merchant,
+        idx2item=idx2item_merchant,
+        no_names=True,
+        num_items=params["n_items"],
+    )
+
+    answer = {"user_interactions": q}
+    answer.update(recs)
+    print(recs)
+
+    return answer
+
+
+def get_recs(
+    model, interactions, item2idx, idx2item, num_items=50, topk=10, no_names=False
+):
     vector = np.zeros(num_items)
     for el in interactions.split("__"):
         # print(el)
-        vector[item2idx.get(str(el), 0)] = 1
+        if num_items == 50:
+            vector[item2idx.get(str(el), 0)] = 1
+        else:
+            vector[int(el)] = 1
 
-    # print(vector.sum())
     vector = torch.Tensor([vector])
     x_recon, _, _ = model(vector)
     preds = x_recon.detach().cpu().numpy()
@@ -106,7 +144,12 @@ def get_recs(model, interactions, num_items=50, topk=10):
     new_recs = [x for x in preds_decoded if x not in interactions][:topk]
     visited_recs = [x for x in preds_decoded if x in interactions][:topk]
 
-    preds_names = [idx2item[x] for x in preds if x in idx2item and idx2item[x] in decoder.keys()]
+    if no_names:
+        return {"merchants_id_recommended": ";".join(map(str, preds_decoded[:topk]))}
+
+    preds_names = [
+        idx2item[x] for x in preds if x in idx2item and idx2item[x] in decoder.keys()
+    ]
 
     new_recs_names = [decoder[x] for x in preds_names if x not in interactions][:topk]
     visited_recs_names = [decoder[x] for x in preds_names if x in interactions][:topk]
