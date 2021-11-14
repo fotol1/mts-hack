@@ -124,9 +124,7 @@ def read_item(q: Optional[str] = None):
     return answer
 
 
-def get_recs(
-    model, interactions, item2idx, idx2item, num_items=50, topk=10, no_names=False
-):
+def get_recs(model, interactions, item2idx, idx2item, num_items=50, topk=10, no_names=False):
     vector = np.zeros(num_items)
     for el in interactions.split("__"):
         # print(el)
@@ -147,9 +145,7 @@ def get_recs(
     if no_names:
         return {"merchants_id_recommended": ";".join(map(str, preds_decoded[:topk]))}
 
-    preds_names = [
-        idx2item[x] for x in preds if x in idx2item and idx2item[x] in decoder.keys()
-    ]
+    preds_names = [idx2item[x] for x in preds if x in idx2item and idx2item[x] in decoder.keys()]
 
     new_recs_names = [decoder[x] for x in preds_names if x not in interactions][:topk]
     visited_recs_names = [decoder[x] for x in preds_names if x in interactions][:topk]

@@ -18,6 +18,8 @@
 
 ### Как запустить решение
 
+Необходимо в положить в папку Data датасеты `train_1.csv`, `train_2.csv`.
+
 Для более легкой воспроизводмости модель можно воспроизвести через docker. Необходимо собрать образ через Dockerfile и запустить контейнер. Для удобства можно выполнить
 
 ```
@@ -28,13 +30,13 @@ chmod +x docker.sh
 
 ```
 cd src
-python3 process_data.py --item_col=mcc --nrows=2000000
+python3 process_data.py --item_col=mcc --nrows=1000000
 python3 train_models.py --item_col=mcc
 ```
 
 ```
 Теперь обучим для магазинов
-python3 process_data.py --item_col=merchant --nrows=2000000
+python3 process_data.py --item_col=merchant --nrows=1500000
 python3 train_models.py --item_col=merchant
 ```
 
@@ -42,9 +44,9 @@ python3 train_models.py --item_col=merchant
 
 Теперь можно составить предсказания на тестовых пользователях. Для этого нужно запустить
 ```
-python3 get_predictions.py --transaction_path=PATH1 --socdem_path=PATH2
+python3 get_predictions.py --transaction_path=PATH1 
 ``` 
-Предсказания лучшей MCC категории будут сложены сюда `Data/predictions`.
+Предсказания лучшей MCC категории будут сложены сюда `Data/predictions.csv`.
 
 Так как нашая основная модель коллаборативной фильтрации MultiVAE умеет отдавать предсказания только на основе интеракций, мы также сделали элементарное API, которое позволяет получать предсказания по пользователю, на основе тех MCC-категорий, в которых он совершал покупки. Внутри докера можно запустить сервер
 ``` 

@@ -10,12 +10,7 @@ import numpy as np
 import pandas as pd
 
 from datahandlers.dataset import MyDataset
-from datahandlers.utils import (
-    encode_data,
-    filter_column,
-    get_label,
-    get_n_users_n_items,
-)
+from datahandlers.utils import encode_data, filter_column, get_label, get_n_users_n_items
 
 
 def read_data_and_split(path, item_col, nrows, params_path):
@@ -48,26 +43,16 @@ def read_data_and_split(path, item_col, nrows, params_path):
 
     ds_grouped = (
         ds.groupby("userId")
-        .apply(
-            lambda x: [
-                y for y, _ in sorted(zip(x.itemId, x.timestamp), key=lambda x: x[1])
-            ]
-        )
+        .apply(lambda x: [y for y, _ in sorted(zip(x.itemId, x.timestamp), key=lambda x: x[1])])
         .reset_index()
     )
     ds_grouped.rename({0: "items"}, axis=1, inplace=True)
     ds_grouped["len_items"] = ds_grouped["items"].apply(lambda x: len(x))
 
     ds_grouped["items"] = ds_grouped["items"].apply(lambda x: get_label(x))
-    ds_grouped["train_items"] = ds_grouped["items"].apply(
-        lambda x: ";".join(map(str, x[0]))
-    )
-    ds_grouped["valid_items"] = ds_grouped["items"].apply(
-        lambda x: ";".join(map(str, x[1]))
-    )
-    ds_grouped["test_items"] = ds_grouped["items"].apply(
-        lambda x: ";".join(map(str, x[2]))
-    )
+    ds_grouped["train_items"] = ds_grouped["items"].apply(lambda x: ";".join(map(str, x[0])))
+    ds_grouped["valid_items"] = ds_grouped["items"].apply(lambda x: ";".join(map(str, x[1])))
+    ds_grouped["test_items"] = ds_grouped["items"].apply(lambda x: ";".join(map(str, x[2])))
     ds_grouped.drop(["items"], axis=1, inplace=True)
 
     params = {"n_items": len(item2idx)}
@@ -90,12 +75,8 @@ def createParser():
     parser.add_argument("--item_col", type=str, default="mcc")
     parser.add_argument("--min_user_freq", type=int, default=10)
     parser.add_argument("--nrows", type=int, default=-1)
-    parser.add_argument(
-        "--output_path", type=str, default="../Data/processed_df.csv.gz"
-    )
-    parser.add_argument(
-        "--params_path", type=str, default="../Data/artifacts/params_{}.json"
-    )
+    parser.add_argument("--output_path", type=str, default="../Data/processed_df.csv.gz")
+    parser.add_argument("--params_path", type=str, default="../Data/artifacts/params_{}.json")
 
     return parser
 

@@ -1,1 +1,1 @@
-Dir for models, label encoders
+artifacts

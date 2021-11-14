@@ -22,12 +22,8 @@ class MultiVAE(nn.Module):
         super().__init__()
         self.p_dims = p_dims
         if q_dims:
-            assert (
-                q_dims[0] == p_dims[-1]
-            ), "In and Out dimensions must equal to each other"
-            assert (
-                q_dims[-1] == p_dims[0]
-            ), "Latent dimension for p- and q- network mismatches."
+            assert q_dims[0] == p_dims[-1], "In and Out dimensions must equal to each other"
+            assert q_dims[-1] == p_dims[0], "Latent dimension for p- and q- network mismatches."
             self.q_dims = q_dims
         else:
             self.q_dims = p_dims[::-1]
@@ -35,16 +31,10 @@ class MultiVAE(nn.Module):
         # Last dimension of q- network is for mean and variance
         temp_q_dims = self.q_dims[:-1] + [self.q_dims[-1] * 2]
         self.q_layers = nn.ModuleList(
-            [
-                nn.Linear(d_in, d_out)
-                for d_in, d_out in zip(temp_q_dims[:-1], temp_q_dims[1:])
-            ]
+            [nn.Linear(d_in, d_out) for d_in, d_out in zip(temp_q_dims[:-1], temp_q_dims[1:])]
         )
         self.p_layers = nn.ModuleList(
-            [
-                nn.Linear(d_in, d_out)
-                for d_in, d_out in zip(self.p_dims[:-1], self.p_dims[1:])
-            ]
+            [nn.Linear(d_in, d_out) for d_in, d_out in zip(self.p_dims[:-1], self.p_dims[1:])]
         )
 
         self.drop = nn.Dropout(dropout)
@@ -117,18 +107,14 @@ class RecSysRunner(dl.Runner):
         )
 
         loss_ae = -torch.mean(torch.sum(F.log_softmax(x_recon, 1) * x, -1))
-        loss_kld = -0.5 * torch.mean(
-            torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1)
-        )
+        loss_kld = -0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
         loss = loss_ae + anneal * loss_kld
 
         self.batch.update({"logits": x_recon, "inputs": x, "targets": x})
         if "targets" in batch:
             self.batch.update({"targets": batch["targets"]})
 
-        self.batch_metrics.update(
-            {"loss_ae": loss_ae, "loss_kld": loss_kld, "loss": loss}
-        )
+        self.batch_metrics.update({"loss_ae": loss_ae, "loss_kld": loss_kld, "loss": loss})
         for key in ["loss_ae", "loss_kld", "loss"]:
             self.meters[key].update(self.batch_metrics[key].item(), self.batch_size)
 

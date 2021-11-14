@@ -62,9 +62,7 @@ def plotImp(model, X, path, num=20, fig_size=(40, 20)):
     plt.figure(figsize=fig_size)
     sns.set(font_scale=5)
     sns.barplot(
-        x="Value",
-        y="Feature",
-        data=feature_imp,
+        x="Value", y="Feature", data=feature_imp,
     )
     plt.title("LightGBM Features (avg over folds)")
     plt.tight_layout()
@@ -78,13 +76,9 @@ def plotImp(model, X, path, num=20, fig_size=(40, 20)):
 def createParser():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--transactions_path", type=str, default="../Data/processed_df.csv.gz"
-    )
+    parser.add_argument("--transactions_path", type=str, default="../Data/processed_df.csv.gz")
     parser.add_argument("--item_col", type=str)
-    parser.add_argument(
-        "--params_path", type=str, default="../Data/artifacts/params_{}.json"
-    )
+    parser.add_argument("--params_path", type=str, default="../Data/artifacts/params_{}.json")
 
     return parser
 
@@ -155,12 +149,9 @@ if __name__ == "__main__":
 
     for col in ["preds_multivae"]:
 
-        ds_grouped["scores"] = ds_grouped.apply(
-            lambda x: get_scores(x, col=col), axis=1
-        )
+        ds_grouped["scores"] = ds_grouped.apply(lambda x: get_scores(x, col=col), axis=1)
         ds_grouped["joined"] = ds_grouped.apply(
-            lambda x: [f"{y1}_{y2}" for y1, y2 in zip(x.all_candidates, x.scores)],
-            axis=1,
+            lambda x: [f"{y1}_{y2}" for y1, y2 in zip(x.all_candidates, x.scores)], axis=1,
         )
         user_item = ds_grouped[["userId", "joined"]].explode("joined")
         user_item["itemId"] = user_item.joined.apply(lambda x: int(x.split("_")[0]))
@@ -207,9 +198,7 @@ if __name__ == "__main__":
         .reset_index()
     )
 
-    merch_info.rename(
-        {k: f"merch_mean_{k}" for k in USER_FEATURES}, axis=1, inplace=True
-    )
+    merch_info.rename({k: f"merch_mean_{k}" for k in USER_FEATURES}, axis=1, inplace=True)
     MERCH_FEATURES = [f"merch_mean_{k}" for k in USER_FEATURES]
     second_level_ds = second_level_ds.merge(merch_info)
     second_level_ds.head()
@@ -231,15 +220,12 @@ if __name__ == "__main__":
     print(f"auc on test: {auc_value}")
 
     plotImp(
-        model=bst,
-        X=FEATURES,
-        path=f"../Data/artifacts/feature_importance_{args.item_col}.png",
+        model=bst, X=FEATURES, path=f"../Data/artifacts/feature_importance_{args.item_col}.png",
     )
     bst.booster_.save_model(f"../Data/artifacts/boosting_{args.item_col}.txt")
 
     logger.info(
         compute_metrics(
-            test_df.sort_values(by="userId")[:100000],
-            models=["preds_multivae", "preds_boosting"],
+            test_df.sort_values(by="userId")[:100000], models=["preds_multivae", "preds_boosting"],
         )
     )
